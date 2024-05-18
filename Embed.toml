@@ -8,4 +8,4 @@ enabled = false
 enabled = true
 
 [default.reset]
-halt_afterwards = true
+halt_afterwards = false

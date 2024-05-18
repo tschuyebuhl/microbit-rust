@@ -17,7 +17,7 @@ fn main() -> ! {
     let mut is_on = false;
     loop {
         _ = row1.set_state(PinState::from(is_on));
-        for _ in 0..100_000_ {
+        for _ in 0..400_000 {
             nop();
         }
         is_on = !is_on;
