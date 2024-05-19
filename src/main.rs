@@ -1,512 +1,467 @@
-#![no_std]
 #![no_main]
+#![no_std]
 
-use defmt_rtt as _;
 use panic_halt as _;
 
+use core::fmt::Write;
 use cortex_m_rt::entry;
-use embedded_hal::delay::DelayNs;
-use microbit::{board::Board, display::blocking::Display, hal::Timer};
+use embedded_io::Read;
+
+use microbit::{Board, hal::uarte, hal::uarte::{Baudrate, Parity}};
+use microbit::display::blocking::Display;
+use nrf52833_hal::Timer;
+
+mod serial_setup;
+use serial_setup::UartePort;
 
 #[entry]
 fn main() -> ! {
-    if let Some(board) = Board::take() {
+    let board = Board::take().unwrap();
         let mut timer = Timer::new(board.TIMER0);
         let mut display = Display::new(board.display_pins);
-        #[allow(non_snake_case)]
-        let letter_A = [
+
+        let mut serial = {
+        let serial = uarte::Uarte::new(
+            board.UARTE0,
+            board.uart.into(),
+            Parity::EXCLUDED,
+            Baudrate::BAUD115200,
+        );
+        UartePort::new(serial)
+    };
+
+    loop {
+        write!(serial, "Hello World:\r\n").unwrap();
+        let mut input = [0];
+        serial.read_exact(&mut input).unwrap();
+        write!(serial, "You said: {}\r\n", input[0] as char).unwrap();
+        display.show(&mut timer, letter_layout(input[0] as char), 500)
+    }
+}
+
+fn letter_layout(letter: char) -> [[u8; 5]; 5]{
+    match letter {
+        'A' => [
             [0, 0, 1, 0, 0],
             [0, 1, 0, 1, 0],
             [0, 1, 1, 1, 0],
             [1, 0, 0, 0, 1],
             [1, 0, 0, 0, 1],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_B = [
+        'B' => [
             [1, 1, 1, 0, 0],
             [1, 0, 0, 1, 0],
             [1, 1, 1, 0, 0],
             [1, 0, 0, 1, 0],
             [1, 1, 1, 0, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_C = [
+        'C' => [
             [0, 1, 1, 1, 0],
             [1, 0, 0, 0, 0],
             [1, 0, 0, 0, 0],
             [1, 0, 0, 0, 0],
             [0, 1, 1, 1, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_D = [
+        'D' => [
             [1, 1, 1, 0, 0],
             [1, 0, 0, 1, 0],
             [1, 0, 0, 1, 0],
             [1, 0, 0, 1, 0],
             [1, 1, 1, 0, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_E = [
+        'E' => [
             [1, 1, 1, 1, 1],
             [1, 0, 0, 0, 0],
             [1, 1, 1, 1, 0],
             [1, 0, 0, 0, 0],
             [1, 1, 1, 1, 1],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_F = [
+        'F' => [
             [1, 1, 1, 1, 1],
             [1, 0, 0, 0, 0],
             [1, 1, 1, 1, 0],
             [1, 0, 0, 0, 0],
             [1, 0, 0, 0, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_G = [
+        'G' => [
             [0, 1, 1, 1, 0],
             [1, 0, 0, 0, 0],
             [1, 0, 1, 1, 1],
             [1, 0, 0, 1, 0],
             [0, 1, 1, 1, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_H = [
+        'H' => [
             [1, 0, 0, 0, 1],
             [1, 0, 0, 0, 1],
             [1, 1, 1, 1, 1],
             [1, 0, 0, 0, 1],
             [1, 0, 0, 0, 1],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_I = [
+        'I' => [
             [0, 1, 1, 1, 0],
             [0, 0, 1, 0, 0],
             [0, 0, 1, 0, 0],
             [0, 0, 1, 0, 0],
             [0, 1, 1, 1, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_J = [
+        'J' => [
             [0, 0, 0, 1, 1],
             [0, 0, 0, 0, 1],
             [0, 0, 0, 0, 1],
             [1, 0, 0, 0, 1],
             [0, 1, 1, 1, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_K = [
+        'K' => [
             [1, 0, 0, 1, 0],
             [1, 0, 1, 0, 0],
             [1, 1, 0, 0, 0],
             [1, 0, 1, 0, 0],
             [1, 0, 0, 1, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_L = [
+        'L' => [
             [1, 0, 0, 0, 0],
             [1, 0, 0, 0, 0],
             [1, 0, 0, 0, 0],
             [1, 0, 0, 0, 0],
             [1, 1, 1, 1, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_M = [
+        'M' => [
             [1, 0, 0, 0, 1],
             [1, 1, 0, 1, 1],
             [1, 0, 1, 0, 1],
             [1, 0, 0, 0, 1],
             [1, 0, 0, 0, 1],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_N = [
+        'N' => [
             [1, 0, 0, 0, 1],
             [1, 1, 0, 0, 1],
             [1, 0, 1, 0, 1],
             [1, 0, 0, 1, 1],
             [1, 0, 0, 0, 1],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_O = [
+        'O' => [
             [0, 1, 1, 1, 0],
             [1, 0, 0, 0, 1],
             [1, 0, 0, 0, 1],
             [1, 0, 0, 0, 1],
             [0, 1, 1, 1, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_P = [
+        'P' => [
             [1, 1, 1, 0, 0],
             [1, 0, 0, 1, 0],
             [1, 1, 1, 0, 0],
             [1, 0, 0, 0, 0],
             [1, 0, 0, 0, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_Q = [
+        'Q' => [
             [0, 1, 1, 1, 0],
             [1, 0, 0, 0, 1],
             [1, 0, 0, 0, 1],
             [1, 0, 0, 1, 0],
             [0, 1, 1, 0, 1],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_R = [
+        'R' => [
             [1, 1, 1, 0, 0],
             [1, 0, 0, 1, 0],
             [1, 1, 1, 0, 0],
             [1, 0, 1, 0, 0],
             [1, 0, 0, 1, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_S = [
+        'S' => [
             [0, 1, 1, 1, 1],
             [1, 0, 0, 0, 0],
             [0, 1, 1, 1, 0],
             [0, 0, 0, 0, 1],
             [1, 1, 1, 1, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_T = [
+        'T' => [
             [1, 1, 1, 1, 1],
             [0, 0, 1, 0, 0],
             [0, 0, 1, 0, 0],
             [0, 0, 1, 0, 0],
             [0, 0, 1, 0, 0],
-        ];
+        ],
 
-        let heart = [
-            [0, 1, 0, 1, 0],
-            [1, 0, 1, 0, 1],
-            [1, 0, 0, 0, 1],
-            [0, 1, 0, 1, 0],
-            [0, 0, 1, 0, 0],
-        ];
-
-        #[allow(non_snake_case)]
-        let letter_U = [
+        'U' => [
             [1, 0, 0, 0, 1],
             [1, 0, 0, 0, 1],
             [1, 0, 0, 0, 1],
             [1, 0, 0, 0, 1],
             [0, 1, 1, 1, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_V = [
+        'V' => [
             [1, 0, 0, 0, 1],
             [1, 0, 0, 0, 1],
             [1, 0, 0, 0, 1],
             [0, 1, 0, 1, 0],
             [0, 0, 1, 0, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_W = [
+        'W' => [
             [1, 0, 0, 0, 1],
             [1, 0, 0, 0, 1],
             [1, 0, 1, 0, 1],
             [1, 1, 0, 1, 1],
             [1, 0, 0, 0, 1],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_X = [
+        'X' => [
             [1, 0, 0, 0, 1],
             [0, 1, 0, 1, 0],
             [0, 0, 1, 0, 0],
             [0, 1, 0, 1, 0],
             [1, 0, 0, 0, 1],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_Y = [
+        'Y' => [
             [1, 0, 0, 0, 1],
             [0, 1, 0, 1, 0],
             [0, 0, 1, 0, 0],
             [0, 0, 1, 0, 0],
             [0, 0, 1, 0, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_Z = [
+        'Z' => [
             [1, 1, 1, 1, 1],
             [0, 0, 0, 1, 0],
             [0, 0, 1, 0, 0],
             [0, 1, 0, 0, 0],
             [1, 1, 1, 1, 1],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_a = [
+        'a' => [
             [0, 0, 0, 0, 0],
             [0, 1, 1, 1, 0],
             [1, 0, 0, 1, 0],
             [1, 0, 0, 1, 0],
             [0, 1, 1, 1, 1],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_b = [
+        'b' => [
             [1, 0, 0, 0, 0],
             [1, 1, 1, 0, 0],
             [1, 0, 0, 1, 0],
             [1, 0, 0, 1, 0],
             [1, 1, 1, 0, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_c = [
+        'c' => [
             [0, 0, 0, 0, 0],
             [0, 1, 1, 1, 0],
             [1, 0, 0, 0, 0],
             [1, 0, 0, 0, 0],
             [0, 1, 1, 1, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_d = [
+        'd' => [
             [0, 0, 0, 1, 0],
             [0, 1, 1, 1, 0],
             [1, 0, 0, 1, 0],
             [1, 0, 0, 1, 0],
             [0, 1, 1, 1, 1],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_e = [
+        'e' => [
             [0, 0, 0, 0, 0],
             [0, 1, 1, 1, 0],
             [1, 0, 0, 1, 0],
             [1, 1, 1, 1, 0],
             [0, 0, 0, 0, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_f = [
+        'f' => [
             [0, 1, 1, 1, 0],
             [0, 1, 0, 0, 0],
             [1, 1, 1, 0, 0],
             [0, 1, 0, 0, 0],
             [0, 1, 0, 0, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_g = [
+        'g' => [
             [0, 1, 1, 1, 0],
             [1, 0, 0, 1, 0],
             [1, 0, 0, 1, 0],
             [0, 1, 1, 1, 0],
             [0, 0, 0, 1, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_h = [
+        'h' => [
             [1, 0, 0, 0, 0],
             [1, 0, 0, 0, 0],
             [1, 1, 1, 0, 0],
             [1, 0, 0, 1, 0],
             [1, 0, 0, 1, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_i = [
+        'i' => [
             [0, 0, 1, 0, 0],
             [0, 0, 0, 0, 0],
             [0, 0, 1, 0, 0],
             [0, 0, 1, 0, 0],
             [0, 0, 1, 0, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_j = [
+        'j' => [
             [0, 0, 0, 1, 0],
             [0, 0, 0, 0, 0],
             [0, 0, 0, 1, 0],
             [0, 0, 0, 1, 0],
             [1, 0, 0, 1, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_k = [
+        'k' => [
             [1, 0, 0, 0, 0],
             [1, 0, 0, 1, 0],
             [1, 1, 1, 0, 0],
             [1, 0, 1, 0, 0],
             [1, 0, 0, 1, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_l = [
+        'l' => [
             [1, 1, 0, 0, 0],
             [0, 1, 0, 0, 0],
             [0, 1, 0, 0, 0],
             [0, 1, 0, 0, 0],
             [1, 1, 1, 0, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_m = [
+        'm' => [
             [0, 0, 0, 0, 0],
             [1, 1, 0, 1, 1],
             [1, 0, 1, 0, 1],
             [1, 0, 1, 0, 1],
             [1, 0, 1, 0, 1],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_n = [
+        'n' => [
             [0, 0, 0, 0, 0],
             [1, 1, 1, 0, 0],
             [1, 0, 0, 1, 0],
             [1, 0, 0, 1, 0],
             [1, 0, 0, 1, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_o = [
+        'o' => [
             [0, 0, 0, 0, 0],
             [0, 1, 1, 0, 0],
             [1, 0, 0, 1, 0],
             [1, 0, 0, 1, 0],
             [0, 1, 1, 0, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_p = [
+        'p' => [
             [0, 0, 0, 0, 0],
             [1, 1, 1, 0, 0],
             [1, 0, 0, 1, 0],
             [1, 1, 1, 0, 0],
             [1, 0, 0, 0, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_q = [
+        'q' => [
             [0, 0, 0, 0, 0],
             [0, 1, 1, 1, 0],
             [1, 0, 0, 1, 0],
             [1, 0, 0, 1, 0],
             [0, 1, 1, 1, 1],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_r = [
+        'r' => [
             [0, 0, 0, 0, 0],
             [1, 1, 1, 0, 0],
             [1, 0, 0, 1, 0],
             [1, 0, 0, 0, 0],
             [1, 0, 0, 0, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_s = [
+        's' => [
             [0, 0, 0, 0, 0],
             [0, 1, 1, 1, 0],
             [1, 1, 1, 0, 0],
             [0, 0, 0, 1, 1],
             [1, 1, 1, 1, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_t = [
+        't' => [
             [0, 1, 0, 0, 0],
             [1, 1, 1, 0, 0],
             [0, 1, 0, 0, 0],
             [0, 1, 0, 0, 0],
             [0, 1, 1, 1, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_u = [
+        'u' => [
             [0, 0, 0, 0, 0],
             [1, 0, 0, 1, 0],
             [1, 0, 0, 1, 0],
             [1, 0, 0, 1, 0],
             [0, 1, 1, 1, 1],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_v = [
+        'v' => [
             [0, 0, 0, 0, 0],
             [1, 0, 0, 1, 0],
             [1, 0, 0, 1, 0],
             [0, 1, 1, 1, 0],
             [0, 0, 1, 0, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_w = [
+        'w' => [
             [0, 0, 0, 0, 0],
             [1, 0, 0, 1, 0],
             [1, 0, 0, 1, 0],
             [1, 0, 1, 1, 0],
             [0, 1, 0, 1, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_x = [
+        'x' => [
             [0, 0, 0, 0, 0],
             [1, 0, 0, 1, 0],
             [0, 1, 1, 0, 0],
             [1, 0, 0, 1, 0],
             [0, 0, 0, 0, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_y = [
+        'y' => [
             [0, 0, 0, 0, 0],
             [1, 0, 0, 1, 0],
             [0, 1, 1, 1, 0],
             [0, 0, 0, 1, 0],
             [1, 1, 1, 0, 0],
-        ];
+        ],
 
-        #[allow(non_snake_case)]
-        let letter_z = [
+        'z' => [
             [0, 0, 0, 0, 0],
             [1, 1, 1, 1, 0],
             [0, 0, 1, 0, 0],
             [0, 1, 0, 0, 0],
             [1, 1, 1, 1, 0],
-        ];
-
-        loop {
-            display.show(&mut timer, letter_I, 1000);
-            display.show(&mut timer, heart, 1000);
-            display.show(&mut timer, letter_L, 1000);
-            display.show(&mut timer, letter_I, 1000);
-            display.show(&mut timer, letter_V, 1000);
-            display.show(&mut timer, letter_E, 1000);
-            display.show(&mut timer, letter_S, 1000);
-            display.show(&mut timer, letter_E, 1000);
-            display.show(&mut timer, letter_S, 1000);
-            display.show(&mut timer, letter_S, 1000);
-            display.show(&mut timer, letter_I, 1000);
-            display.show(&mut timer, letter_O, 1000);
-            display.show(&mut timer, letter_N, 1000);
-            display.clear();
-            timer.delay_ms(250_u32);
-        }
+        ],
+        _ => [
+            [0, 1, 0, 1, 0],
+            [1, 0, 1, 0, 1],
+            [1, 0, 0, 0, 1],
+            [0, 1, 0, 1, 0],
+            [0, 0, 1, 0, 0],
+        ],
     }
-
-    panic!("End");
 }
